@@ -19,4 +19,6 @@ public interface ServerChunkProviderBridge {
     void bridge$setChunkGenerator(ChunkGenerator chunkGenerator);
 
     void bridge$setViewDistance(int viewDistance);
+
+    void bridge$setSimulationDistance(int simDistance);
 }

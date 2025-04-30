@@ -299,8 +299,8 @@ public abstract class MinecraftServerMixin extends ReentrantBlockableEventLoop<T
             }
             if (((WorldBridge) serverWorld).bridge$getGenerator() != null) {
                 serverWorld.bridge$getWorld().getPopulators().addAll(
-                    ((WorldBridge) serverWorld).bridge$getGenerator().getDefaultPopulators(
-                        serverWorld.bridge$getWorld()));
+                        ((WorldBridge) serverWorld).bridge$getGenerator().getDefaultPopulators(
+                                serverWorld.bridge$getWorld()));
             }
             Bukkit.getPluginManager().callEvent(new WorldInitEvent(serverWorld.bridge$getWorld()));
         }
@@ -360,11 +360,21 @@ public abstract class MinecraftServerMixin extends ReentrantBlockableEventLoop<T
         boolean flag = saveData.isDebugWorld();
         if (((WorldBridge) serverWorld).bridge$getGenerator() != null) {
             serverWorld.bridge$getWorld().getPopulators().addAll(
-                ((WorldBridge) serverWorld).bridge$getGenerator().getDefaultPopulators(
-                    serverWorld.bridge$getWorld()));
+                    ((WorldBridge) serverWorld).bridge$getGenerator().getDefaultPopulators(
+                            serverWorld.bridge$getWorld()));
         }
         WorldBorder worldborder = serverWorld.getWorldBorder();
         worldborder.applySettings(worldInfo.getWorldBorder());
+
+        // Call WorldInitEvent for Bukkit created world
+        // Before any chunk is loaded/generated.
+        // This makes delayed configurate possible.
+        // Calling multiple times is OK since Spigot also do so.
+        // See [PlotSquared] BukkitSetupUtils#setupWorld(PlotAreaBuilder).
+        // See CraftServer.
+        // CraftBukkit - SPIGOT-5569: Call WorldInitEvent before any chunks are generated
+        this.server.getPluginManager().callEvent(new WorldInitEvent(serverWorld.bridge$getWorld()));
+
         if (!worldInfo.isInitialized()) {
             try {
                 setInitialSpawn(serverWorld, worldInfo, worldOptions.generateBonusChest(), flag);
@@ -485,6 +495,15 @@ public abstract class MinecraftServerMixin extends ReentrantBlockableEventLoop<T
         this.server = server;
     }
 
+    // Used for one-shot cache access
+    @Override
+    public CraftServer bridge$getServer() {
+        if (this.server == null) {
+            throw new IllegalStateException("CraftServer has not been initialized yet");
+        }
+        return this.server;
+    }
+
     @Override
     public RemoteConsoleCommandSender bridge$getRemoteConsole() {
         return remoteConsole;
@@ -529,4 +548,3 @@ public abstract class MinecraftServerMixin extends ReentrantBlockableEventLoop<T
         return CraftRegistry.getMinecraftRegistry();
     }
 }
-
